@@ -1,4 +1,11 @@
-# Obsidian community plugin
+## Kanban view for Obsidian Bases
+
+Adds a kanban layout to [Obsidian Bases](https://help.obsidian.md/bases) so you can display notes as cards organized in columns.
+
+- Display notes as cards grouped by a property value
+- Configure which property defines the columns (e.g., status, priority)
+- Customize card title and description properties
+- Click cards to open the corresponding note
 
 ## Project overview
 
@@ -49,6 +56,7 @@ npm run build
   src/
     main.ts           # Plugin entry point, lifecycle management
     settings.ts       # Settings interface and defaults
+    kanban-view.ts    # BasesView implementation for kanban
     commands/         # Command implementations
       command1.ts
       command2.ts

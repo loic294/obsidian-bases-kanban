@@ -1,0 +1,87 @@
+---
+description: Obsidian plugin development guidelines
+globs: ["src/**/*.ts", "*.ts"]
+alwaysApply: false
+---
+
+# Obsidian Plugin Guidelines
+
+Follow these guidelines when developing Obsidian plugins. Based on the official [Plugin Guidelines](https://docs.obsidian.md/Plugins/Releasing/Plugin+guidelines).
+
+## General
+
+-   **Avoid global app instance**: Never use `app` or `window.app`. Always use `this.app` from the plugin instance.
+-   **Avoid unnecessary logging**: Only show error messages and debug info in development. Remove or disable `console.log()` calls in production.
+-   **Rename placeholder classes**: Replace sample names like `MyPlugin`, `MyPluginSettings`, `SampleSettingTab` with descriptive names matching your plugin.
+
+## Mobile Compatibility
+
+-   **Node.js and Electron APIs unavailable**: These APIs don't work on mobile. Any calls can crash your plugin on iOS/Android.
+-   **Lookbehind regex limitation**: Lookbehind in regular expressions only works on iOS 16.4+. Provide fallbacks for older versions.
+-   **Check platform when needed**: Use `Platform.isMobile`, `Platform.isDesktop`, etc. for platform-specific code.
+
+## UI Text
+
+-   **Use sentence case**: All UI text should use sentence case, not Title Case. Only capitalize the first word and proper nouns.
+-   **Use setHeading()**: For settings headings, use `Setting.setHeading()` instead of raw `<h1>`, `<h2>` elements.
+-   **Avoid "settings" in headings**: Don't include the word "settings" in settings section headings.
+-   **Minimal section headings**: Only use section headings if you have multiple distinct settings groups.
+
+## Security
+
+-   **Avoid innerHTML**: Never use `innerHTML`, `outerHTML`, or `insertAdjacentHTML`.
+-   **Use DOM API**: Build elements with `createEl()`, `createDiv()`, `createSpan()` and similar Obsidian helpers.
+
+## Resource Management
+
+-   **Use register helpers**: Always use `registerEvent()`, `registerDomEvent()`, `registerInterval()` for automatic cleanup on unload.
+-   **Clean up in onunload()**: Release any resources not handled by register helpers.
+-   **Never detach leaves in onunload()**: This causes issues when Obsidian restarts.
+
+## Commands
+
+-   **No default hotkeys**: Avoid setting default hotkeys for commands. Let users configure their own.
+-   **Use appropriate callback type**:
+    -   `callback`: Simple commands that always work
+    -   `checkCallback`: Commands that may be disabled based on context
+    -   `editorCallback`: Commands that operate on the editor
+
+## Workspace
+
+-   **Avoid workspace.activeLeaf**: This is deprecated. Use `getActiveViewOfType()` instead:
+
+```typescript
+const view = this.app.workspace.getActiveViewOfType(MarkdownView);
+if (view) {
+	// work with view
+}
+```
+
+## Editor and Vault
+
+-   **Use Editor for active notes**: When editing the currently open note, use the `Editor` interface, not `Vault.modify()`.
+-   **Use Vault.process() for closed notes**: For notes that aren't open, use `Vault.process()` instead of `Vault.modify()`.
+-   **Use processFrontMatter()**: For modifying frontmatter, use `FileManager.processFrontMatter()` instead of parsing YAML manually.
+-   **Use direct file lookups**: Use `Vault.getFileByPath()`, `Vault.getFolderByPath()`, or `Vault.getAbstractFileByPath()` instead of iterating all files.
+-   **Normalize paths**: Always use `normalizePath()` for user-defined paths to handle cross-platform path separators.
+
+## Styling
+
+-   **Use CSS variables**: Use Obsidian's CSS variables for consistent theming. See the CSS variables reference in the Obsidian docs.
+-   **Support dark and light themes**: Test your plugin in both themes.
+
+## TypeScript
+
+-   **Use let/const**: Never use `var`. Always use `let` or `const`.
+-   **Enable strict mode**: Use `"strict": true` in tsconfig.json when possible.
+
+## Bases Views (for this plugin)
+
+When implementing `BasesView`:
+
+-   Extend `BasesView` class from 'obsidian'
+-   Implement `onDataUpdated()` to react to data changes
+-   Implement static `getViewOptions()` to expose configuration options
+-   Use `this.data` to access query results
+-   Use `this.config` to access view configuration
+-   Register the view with `this.registerBasesView()` in the plugin

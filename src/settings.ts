@@ -1,36 +1,29 @@
-import {App, PluginSettingTab, Setting} from "obsidian";
-import MyPlugin from "./main";
+import { App, PluginSettingTab, Setting } from 'obsidian';
+import BasesKanbanPlugin from './main';
 
-export interface MyPluginSettings {
-	mySetting: string;
+export interface KanbanSettings {
+	// Plugin-level settings can be added here
 }
 
-export const DEFAULT_SETTINGS: MyPluginSettings = {
-	mySetting: 'default'
-}
+export const DEFAULT_SETTINGS: KanbanSettings = {
+};
 
-export class SampleSettingTab extends PluginSettingTab {
-	plugin: MyPlugin;
+export class KanbanSettingTab extends PluginSettingTab {
+	plugin: BasesKanbanPlugin;
 
-	constructor(app: App, plugin: MyPlugin) {
+	constructor(app: App, plugin: BasesKanbanPlugin) {
 		super(app, plugin);
 		this.plugin = plugin;
 	}
 
 	display(): void {
-		const {containerEl} = this;
-
+		const { containerEl } = this;
 		containerEl.empty();
 
-		new Setting(containerEl)
-			.setName('Settings #1')
-			.setDesc('It\'s a secret')
-			.addText(text => text
-				.setPlaceholder('Enter your secret')
-				.setValue(this.plugin.settings.mySetting)
-				.onChange(async (value) => {
-					this.plugin.settings.mySetting = value;
-					await this.plugin.saveSettings();
-				}));
+		// Settings will be added here as needed
+		containerEl.createEl('p', {
+			text: 'Kanban view settings will appear here.',
+			cls: 'setting-item-description'
+		});
 	}
 }
