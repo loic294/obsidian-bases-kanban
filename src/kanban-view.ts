@@ -1,8 +1,10 @@
 import {
 	BasesView,
 	BasesPropertyId,
+	BasesEntry,
 	QueryController,
 	ViewOption,
+	Value,
 } from 'obsidian';
 import type BasesKanbanPlugin from './main';
 
@@ -65,19 +67,20 @@ export class KanbanView extends BasesView {
 			return;
 		}
 
-		// Group data by column property value
-		const columns = new Map<string, typeof this.data>();
+		// Get entries from BasesQueryResult
+		const entries = this.data?.data ?? [];
 
-		if (this.data) {
-			for (const row of this.data) {
-				const columnValue = this.getPropertyValue(row, this.kanbanConfig.columnProp);
-				const columnKey = columnValue ?? '(No value)';
-				
-				if (!columns.has(columnKey)) {
-					columns.set(columnKey, []);
-				}
-				columns.get(columnKey)!.push(row);
+		// Group entries by column property value
+		const columns = new Map<string, BasesEntry[]>();
+
+		for (const entry of entries) {
+			const columnValue = this.getValueAsString(entry.getValue(this.kanbanConfig.columnProp));
+			const columnKey = columnValue ?? '(No value)';
+			
+			if (!columns.has(columnKey)) {
+				columns.set(columnKey, []);
 			}
+			columns.get(columnKey)!.push(entry);
 		}
 
 		// Render columns
@@ -97,40 +100,40 @@ export class KanbanView extends BasesView {
 			// Cards container
 			const cardsEl = columnEl.createDiv({ cls: 'bases-kanban-cards' });
 
-			for (const item of items) {
-				this.renderCard(cardsEl, item);
+			for (const entry of items) {
+				this.renderCard(cardsEl, entry);
 			}
 		}
 	}
 
-	private renderCard(container: HTMLElement, row: Record<string, unknown>): void {
+	private renderCard(container: HTMLElement, entry: BasesEntry): void {
 		const cardEl = container.createDiv({ cls: 'bases-kanban-card' });
 
-		// Get title
-		const title = this.kanbanConfig?.titleProp 
-			? this.getPropertyValue(row, this.kanbanConfig.titleProp)
-			: this.getPropertyValue(row, 'file.name');
+		// Get title from configured property or fall back to file name
+		let title: string | null = null;
+		if (this.kanbanConfig?.titleProp) {
+			title = this.getValueAsString(entry.getValue(this.kanbanConfig.titleProp));
+		}
+		if (!title) {
+			title = entry.file.basename;
+		}
 
 		// Card title
 		const titleEl = cardEl.createDiv({ cls: 'bases-kanban-card-title' });
-		const filePath = this.getPropertyValue(row, 'file.path');
+		const filePath = entry.file.path;
 		
-		if (filePath) {
-			const link = titleEl.createEl('a', { 
-				text: title ?? 'Untitled',
-				cls: 'internal-link'
-			});
-			link.addEventListener('click', (evt) => {
-				evt.preventDefault();
-				void this.app.workspace.openLinkText(filePath, '', evt.ctrlKey || evt.metaKey);
-			});
-		} else {
-			titleEl.setText(title ?? 'Untitled');
-		}
+		const link = titleEl.createEl('a', { 
+			text: title,
+			cls: 'internal-link'
+		});
+		link.addEventListener('click', (evt) => {
+			evt.preventDefault();
+			void this.app.workspace.openLinkText(filePath, '', evt.ctrlKey || evt.metaKey);
+		});
 
 		// Description (if configured)
 		if (this.kanbanConfig?.descriptionProp) {
-			const description = this.getPropertyValue(row, this.kanbanConfig.descriptionProp);
+			const description = this.getValueAsString(entry.getValue(this.kanbanConfig.descriptionProp));
 			if (description) {
 				cardEl.createDiv({ 
 					text: description,
@@ -140,13 +143,12 @@ export class KanbanView extends BasesView {
 		}
 	}
 
-	private getPropertyValue(row: Record<string, unknown>, propId: string): string | null {
-		const value = row[propId];
+	private getValueAsString(value: Value | null): string | null {
 		if (value === null || value === undefined) return null;
-		if (typeof value === 'string') return value;
-		if (typeof value === 'number') return String(value);
-		if (Array.isArray(value)) return value.join(', ');
-		return String(value);
+		
+		// Value has a toString() method
+		const str = value.toString();
+		return str || null;
 	}
 
 	static getViewOptions(): ViewOption[] {
@@ -174,4 +176,3 @@ export class KanbanView extends BasesView {
 		];
 	}
 }
-
