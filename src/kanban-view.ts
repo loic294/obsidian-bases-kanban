@@ -350,24 +350,25 @@ export class KanbanView extends BasesView {
 	}
 
 	private handleAddColumn(): void {
+		const groupByProperty = this.groupByProperty;
+		
+		// If we can't detect the groupBy property, prompt for it
+		if (!groupByProperty) {
+			new Notice('Could not detect groupBy property. Configure "Group by" in the Sort menu first.');
+			return;
+		}
+
 		const modal = new AddColumnModal(this.app, this.data?.data ?? [], async (columnValue, selectedFiles) => {
 			if (!columnValue || selectedFiles.length === 0) return;
 			
-			// We need to know the property name to set
-			// For now, prompt the user for it
-			const propModal = new SelectPropertyModal(this.app, async (propertyName) => {
-				if (!propertyName) return;
-				
-				// Update all selected files with the new property value
-				for (const entry of selectedFiles) {
-					await this.app.fileManager.processFrontMatter(entry.file, (fm) => {
-						fm[propertyName] = columnValue;
-					});
-				}
-				
-				new Notice(`Added "${propertyName}: ${columnValue}" to ${selectedFiles.length} files`);
-			});
-			propModal.open();
+			// Update all selected files with the new property value using detected groupBy property
+			for (const entry of selectedFiles) {
+				await this.app.fileManager.processFrontMatter(entry.file, (fm) => {
+					fm[groupByProperty] = columnValue;
+				});
+			}
+			
+			new Notice(`Added "${groupByProperty}: ${columnValue}" to ${selectedFiles.length} files`);
 		});
 		modal.open();
 	}
@@ -792,69 +793,6 @@ class AddColumnModal extends Modal {
 				.onClick(() => this.close()));
 		
 		this.columnValueInput.focus();
-	}
-
-	onClose() {
-		const { contentEl } = this;
-		contentEl.empty();
-	}
-}
-
-// Modal for selecting a property name
-class SelectPropertyModal extends Modal {
-	private onSubmit: (propertyName: string) => void;
-	private inputEl: HTMLInputElement;
-
-	constructor(app: App, onSubmit: (propertyName: string) => void) {
-		super(app);
-		this.onSubmit = onSubmit;
-	}
-
-	onOpen() {
-		const { contentEl } = this;
-		contentEl.empty();
-		contentEl.addClass('bases-kanban-modal');
-		
-		contentEl.createEl('h3', { text: 'Select property' });
-		contentEl.createEl('p', { 
-			text: 'Enter the property name to use for column grouping.',
-			cls: 'setting-item-description'
-		});
-		
-		new Setting(contentEl)
-			.setName('Property name')
-			.addText(text => {
-				this.inputEl = text.inputEl;
-				text.setPlaceholder('e.g., status, priority');
-			});
-		
-		new Setting(contentEl)
-			.addButton(btn => btn
-				.setButtonText('Apply')
-				.setCta()
-				.onClick(() => {
-					const value = this.inputEl.value.trim();
-					if (value) {
-						this.onSubmit(value);
-						this.close();
-					}
-				}))
-			.addButton(btn => btn
-				.setButtonText('Cancel')
-				.onClick(() => this.close()));
-		
-		this.inputEl.focus();
-		
-		this.inputEl.addEventListener('keydown', (evt) => {
-			if (evt.key === 'Enter') {
-				evt.preventDefault();
-				const value = this.inputEl.value.trim();
-				if (value) {
-					this.onSubmit(value);
-					this.close();
-				}
-			}
-		});
 	}
 
 	onClose() {
