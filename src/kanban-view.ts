@@ -258,9 +258,61 @@ export class KanbanView extends BasesView {
 		const iconName = this.getIconForValue(value, propId);
 		setIcon(iconEl, iconName);
 		
-		// Value
+		// Value - special handling for tags
 		const valueEl = rowEl.createSpan({ cls: 'bases-kanban-property-value' });
-		valueEl.setText(this.formatValue(value));
+		
+		if (value instanceof TagValue) {
+			// Single tag
+			this.renderSingleTag(valueEl, value.toString());
+		} else if (value instanceof ListValue) {
+			// Check if it's a list of tags by inspecting the string representation
+			const valueStr = value.toString();
+			if (valueStr.includes('#')) {
+				// Parse tags from the list (format: "#Tag1, #Tag2")
+				this.renderTagList(valueEl, valueStr);
+			} else {
+				valueEl.setText(valueStr);
+			}
+		} else {
+			valueEl.setText(this.formatValue(value));
+		}
+	}
+
+	private renderSingleTag(container: HTMLElement, tagName: string): void {
+		const tagLink = container.createEl('a', {
+			cls: 'tag',
+			href: tagName,
+			text: tagName
+		});
+		this.applyTagColors(tagLink, tagName);
+	}
+
+	private renderTagList(container: HTMLElement, tagsString: string): void {
+		// Parse comma-separated tags (e.g., "#IcM, #Today")
+		const tags = tagsString.split(',').map(t => t.trim()).filter(t => t.startsWith('#'));
+		
+		const tagsContainer = container.createDiv({ cls: 'bases-kanban-tags-container' });
+		for (const tagName of tags) {
+			const tagLink = tagsContainer.createEl('a', {
+				cls: 'tag',
+				href: tagName,
+				text: tagName
+			});
+			this.applyTagColors(tagLink, tagName);
+		}
+	}
+
+	private applyTagColors(element: HTMLElement, tagName: string): void {
+		const tagColor = this.plugin.getTagColor(tagName);
+		if (tagColor) {
+			const bgColor = `rgb(${tagColor.background_color.r}, ${tagColor.background_color.g}, ${tagColor.background_color.b})`;
+			const textColor = `rgb(${tagColor.color.r}, ${tagColor.color.g}, ${tagColor.color.b})`;
+			element.style.setProperty('background-color', bgColor, 'important');
+			element.style.setProperty('color', textColor, 'important');
+			element.style.setProperty('padding', '2px 8px', 'important');
+			element.style.setProperty('border-radius', 'var(--radius-s)', 'important');
+			element.style.setProperty('text-decoration', 'none', 'important');
+		}
 	}
 
 	private getIconForValue(value: Value, propId: BasesPropertyId): string {
