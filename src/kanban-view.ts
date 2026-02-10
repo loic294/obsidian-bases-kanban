@@ -38,6 +38,7 @@ export class KanbanView extends BasesView {
 	private groupByProperty: string | null = null;
 	private dragDropManager: DragDropManager;
 	private currentGroups: BasesEntryGroup[] = [];
+	private lastBoardScrollLeft = 0;
 
 	constructor(controller: QueryController, scrollEl: HTMLElement, plugin: BasesKanbanPlugin) {
 		super(controller);
@@ -74,6 +75,12 @@ export class KanbanView extends BasesView {
 	}
 
 	private render(): void {
+		// Preserve horizontal scroll position before re-render
+		const existingBoard = this.containerEl.querySelector('.bases-kanban-board') as HTMLElement | null;
+		if (existingBoard) {
+			this.lastBoardScrollLeft = existingBoard.scrollLeft;
+		}
+
 		this.containerEl.empty();
 
 		// Get grouped data - this uses the Bases groupBy configuration
@@ -104,6 +111,13 @@ export class KanbanView extends BasesView {
 
 		// Initialize drag & drop for this board
 		this.dragDropManager.initBoard(boardEl);
+
+		// Restore horizontal scroll position after re-render
+		if (this.lastBoardScrollLeft > 0) {
+			requestAnimationFrame(() => {
+				boardEl.scrollLeft = this.lastBoardScrollLeft;
+			});
+		}
 
 		// Render columns with their index for drag & drop
 		sortedGroups.forEach((group, columnIndex) => {
