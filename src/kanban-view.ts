@@ -381,9 +381,10 @@ export class KanbanView extends BasesView {
 		const fileName = noteName.endsWith('.md') ? noteName : `${noteName}.md`;
 		
 		try {
-			// Determine the folder - use current file's folder or root
+			// Determine the folder using Obsidian's "New note location" setting
 			const activeFile = this.app.workspace.getActiveFile();
-			const folder = activeFile?.parent?.path ?? '';
+			const parentFolder = this.app.fileManager.getNewFileParent(activeFile?.path ?? '');
+			const folder = parentFolder?.path ?? '';
 			const fullPath = folder ? `${folder}/${fileName}` : fileName;
 			
 			// Create file with frontmatter if we have a column value
